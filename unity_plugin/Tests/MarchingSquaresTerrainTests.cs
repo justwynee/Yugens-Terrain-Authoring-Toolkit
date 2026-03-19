@@ -354,6 +354,63 @@ namespace MarchingSquaresTerrain.Tests
     }
 
     // =========================================================================
+    // 7b. TRIANGLE WINDING ORDER
+    // =========================================================================
+    /// <summary>
+    /// Verify that the winding-order fix (triangle indices built as i, i+2, i+1)
+    /// produces upward-facing normals for a flat floor cell.
+    ///
+    /// Unity uses a left-hand coordinate system where the front face of a triangle
+    /// is determined by clockwise vertex order when viewed from the front (i.e. from
+    /// the direction the surface normal points).
+    /// The Godot source used a right-hand coordinate system where the same vertex
+    /// order produced outward normals; in Unity the indices must be reversed.
+    ///
+    /// The test computes the cross-product normal using the reversed winding and
+    /// asserts its Y component is positive (i.e. faces up).
+    /// </summary>
+    [TestFixture]
+    public class TriangleWindingTests
+    {
+        [Test]
+        public void FlatFloor_WindingFix_NormalPointsUp()
+        {
+            var chunk  = TerrainTestHelpers.MakeChunk(new Vector3Int(33, 32, 33), new Vector2(2f, 2f));
+            var helper = new MarchingSquaresTerrainVertexColorHelper();
+            // Flat cell – all four corners at the same height
+            var cell   = new MarchingSquaresTerrainCell(chunk, helper, 5f, 5f, 5f, 5f,
+                MarchingSquaresTerrainChunk.MERGE_MODE[MarchingSquaresTerrainChunk.Mode.POLYHEDRON]);
+            helper.chunk = chunk; helper.cell = cell;
+            cell.GenerateGeometry(Vector2Int.zero);
+
+            // The mesh builder writes triangle indices as (i, i+2, i+1) to flip the
+            // winding relative to the Godot source.  Replicate that here and check the
+            // resulting face normal for each triangle.
+            var pts = cell.pts;
+            Assert.IsTrue(pts.Count >= 3, "Expected at least one triangle");
+            Assert.AreEqual(0, pts.Count % 3, "Vertex count must be a multiple of 3");
+
+            for (int i = 0; i < pts.Count; i += 3)
+            {
+                // Mirror the reversed winding used in RegenerateMesh: (i, i+2, i+1)
+                Vector3 v0 = pts[i];
+                Vector3 v2 = pts[i + 2]; // second index in the fixed winding
+                Vector3 v1 = pts[i + 1]; // third index in the fixed winding
+
+                Vector3 edge1 = v2 - v0;
+                Vector3 edge2 = v1 - v0;
+                Vector3 normal = Vector3.Cross(edge1, edge2);
+
+                Assert.Greater(normal.y, 0f,
+                    $"Triangle {i / 3}: normal Y should be positive (upward), got {normal.y:F4}. " +
+                    $"Vertices: {v0}, {v2}, {v1}");
+            }
+
+            TerrainTestHelpers.Cleanup(chunk);
+        }
+    }
+
+    // =========================================================================
     // 8.  BARYCENTRIC MATH (grass planter)
     // =========================================================================
     [TestFixture]
