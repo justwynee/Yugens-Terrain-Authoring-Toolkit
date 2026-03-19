@@ -17,6 +17,7 @@ namespace MarchingSquaresTerrain
     /// </summary>
     [ExecuteAlways]
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
+    [RequireComponent(typeof(MeshCollider))]
     public class MarchingSquaresTerrainChunk : MonoBehaviour
     {
         // -----------------------------------------------------------------------
@@ -206,8 +207,17 @@ namespace MarchingSquaresTerrain
             var mesh = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
             mesh.SetVertices(_verts);
 
-            // Build triangle list
-            for (int i = 0; i < _verts.Count; i++) _tris.Add(i);
+            // Build triangle list.
+            // Reverse winding (swap i+1 / i+2) so normals point upward in Unity's
+            // left-hand coordinate system.  The Godot source used a right-hand
+            // coordinate system where the same vertex order produced outward normals,
+            // but in Unity the winding must be flipped to achieve the same result.
+            for (int i = 0; i < _verts.Count; i += 3)
+            {
+                _tris.Add(i);
+                _tris.Add(i + 2);
+                _tris.Add(i + 1);
+            }
             mesh.SetTriangles(_tris, 0);
 
             mesh.SetUVs(0, _uvs);
@@ -221,6 +231,12 @@ namespace MarchingSquaresTerrain
 
             var mf = GetComponent<MeshFilter>();
             mf.sharedMesh = mesh;
+
+            // Update the MeshCollider so Physics.Raycast hits the terrain in the
+            // editor (required for the paint / height tools in OnSceneGUI).
+            var mc = GetComponent<MeshCollider>();
+            if (mc != null)
+                mc.sharedMesh = mesh;
 
             if (terrain_system != null)
             {
