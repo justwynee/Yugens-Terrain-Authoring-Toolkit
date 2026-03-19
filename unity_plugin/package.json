@@ -1,0 +1,22 @@
+{
+  "name": "com.yugen.marching-squares-terrain",
+  "version": "1.0.0",
+  "displayName": "Yugen's Marching Squares Terrain",
+  "description": "A procedural terrain authoring toolkit using Marching Squares algorithm. Exact port of the Godot 4 plugin to Unity (identical math and geometry logic).",
+  "unity": "2022.3",
+  "unityRelease": "0f1",
+  "documentationUrl": "",
+  "changelogUrl": "",
+  "licensesUrl": "",
+  "dependencies": {},
+  "keywords": [
+    "terrain",
+    "marching-squares",
+    "procedural",
+    "mesh"
+  ],
+  "author": {
+    "name": "Yugen",
+    "url": ""
+  }
+}
